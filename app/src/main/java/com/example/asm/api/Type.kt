@@ -22,6 +22,6 @@ data class ProductDetail(
     val product_price: Number,
     val product_images: List<Image>,
     val category_id: String,
-    val stock: Number,
+    val stock: Int,
     val model: String
 )

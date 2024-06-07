@@ -1,6 +1,5 @@
 package com.example.asm.components
 
-import android.media.tv.TvContract.Channels.Logo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,24 +46,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.asm.R
-
-//@Preview
-//@Composable
-//fun HeaderHome() {
-//    Row {
-//        Icon(painter = , contentDescription = )
-//    }
-//}
 
 @Composable
 fun ButtonComponent(
@@ -73,6 +66,8 @@ fun ButtonComponent(
     textColor: Color = Color.White,
     backgroundColor: Color = Color(0xFF242424),
     shape: Shape = RoundedCornerShape(8.dp),
+    paddingVertical: Dp = 10.dp,
+    isDisable: Boolean = false,
     onClick: () -> Unit,
 ) {
     Button(
@@ -82,13 +77,14 @@ fun ButtonComponent(
         ),
         shape = shape,
         modifier = modifier,
+        enabled = !isDisable
     ) {
         Text(
             text = text,
             color = textColor,
             fontFamily = FontFamily.Serif,
             fontSize = 18.sp,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = paddingVertical)
         )
     }
 }
@@ -168,7 +164,9 @@ fun Category(url: Any, title: String, isSelect: Boolean, onClick: () -> Unit) {
                 .aspectRatio(1f)
         ) {
             AsyncImage(
-                modifier = Modifier.padding(10.dp).clip(RoundedCornerShape(5.dp)),
+                modifier = Modifier
+                    .padding(10.dp)
+                    .clip(RoundedCornerShape(5.dp)),
                 model = url,
                 contentScale = ContentScale.FillHeight,
                 contentDescription = "Menu",
@@ -179,8 +177,16 @@ fun Category(url: Any, title: String, isSelect: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun ItemProduct(url: Any, name: String, price: Number, click: () -> Unit) {
-    Column(modifier = Modifier.padding(10.dp).clickable { click() }) {
+fun ItemProduct(
+    id: String,
+    url: Any,
+    name: String,
+    price: Number,
+    click: () -> Unit
+) {
+    Column(modifier = Modifier
+        .padding(10.dp)
+        .clickable { click() }) {
         Box {
             AsyncImage(
                 model = url,
@@ -224,17 +230,28 @@ fun ItemProduct(url: Any, name: String, price: Number, click: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun ItemCart() {
+fun ItemCart(
+    name: String,
+    price: Number,
+    url: Any,
+    quantity: Int,
+    stock: Int,
+    handleDelete: () -> Unit,
+    handleIncrease: (quantity: Int) -> Unit,
+    handleDecrease: (quantity: Int) -> Unit
+) {
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
     ) {
         Row {
-            Image(
-                painter = painterResource(id = R.drawable.product), contentDescription = "Product",
+            AsyncImage(
+                model = url,
+                contentDescription = "Product",
                 modifier = Modifier
                     .padding(end = 20.dp)
                     .width(100.dp)
@@ -248,12 +265,12 @@ fun ItemCart() {
             ) {
                 Column {
                     Text(
-                        text = "Minimal Stand",
+                        text = name,
                         color = Color(0xFF999999),
                         fontWeight = FontWeight(600)
                     )
                     Text(
-                        text = "$ 25.00",
+                        text = "$ $price",
                         color = Color.Black,
                         fontWeight = FontWeight(600)
                     )
@@ -262,7 +279,12 @@ fun ItemCart() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = { /*TODO*/ },
+                        onClick = {
+                            if (quantity + 1 > stock) {
+                                return@IconButton
+                            } else
+                                handleIncrease(quantity + 1)
+                        },
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add, contentDescription = "Add",
@@ -276,7 +298,7 @@ fun ItemCart() {
                     Spacer(modifier = Modifier.width(15.dp))
 
                     Text(
-                        text = "01",
+                        text = quantity.toString(),
                         fontSize = 18.sp,
                         fontWeight = FontWeight(600)
                     )
@@ -284,7 +306,11 @@ fun ItemCart() {
                     Spacer(modifier = Modifier.width(15.dp))
 
                     IconButton(
-                        onClick = { /*TODO*/ },
+                        onClick = {
+                            if (quantity - 1 <= 0) return@IconButton else handleDecrease(
+                                quantity - 1
+                            )
+                        },
                     ) {
                         Icon(
                             imageVector = Icons.Default.Menu, contentDescription = "Add",
@@ -298,7 +324,7 @@ fun ItemCart() {
             }
         }
         IconButton(
-            onClick = { /*TODO*/ },
+            onClick = { handleDelete() },
             modifier = Modifier.align(alignment = Alignment.TopEnd)
         ) {
             Icon(
@@ -326,15 +352,14 @@ fun TextButtonComponent(
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun TitleCheckOut() {
+fun TitleCheckOut(title: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Shipping Address",
+            text = title,
             fontSize = 18.sp,
             color = Color(0xFF909090),
             fontWeight = FontWeight.Bold
@@ -386,9 +411,6 @@ fun Logo(modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewButton() {
-    ButtonComponent(text = "Click") {
-
-    }
 }
 
 @Preview(showBackground = true)

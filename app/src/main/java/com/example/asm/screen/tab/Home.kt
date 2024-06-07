@@ -1,7 +1,7 @@
 package com.example.asm.screen.tab
 
-import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -34,25 +33,20 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.asm.api.Category
 import com.example.asm.api.ViewModel.CategoryViewModel
 import com.example.asm.api.ViewModel.ProductViewModel
 import com.example.asm.components.Category
 import com.example.asm.components.ItemProduct
-import com.example.asm.ui.theme.ASMTheme
-import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(
-    navController: NavController?,
+    navController: NavController,
     categoryViewModel: CategoryViewModel,
-    productViewModel: ProductViewModel
+    productViewModel: ProductViewModel,
 ) {
     val context = LocalContext.current
-
 
     val categoryResponse by categoryViewModel.categories
     val productResponse by productViewModel.products
@@ -70,6 +64,7 @@ fun HomeScreen(
     }
 
     LaunchedEffect(key1 = selectedCategory) {
+        if (selectedCategory == null) return@LaunchedEffect
         productViewModel.getProductByCategory(selectedCategory.toString())
     }
 
@@ -95,7 +90,10 @@ fun HomeScreen(
                     }
                 }
             }, fontFamily = FontFamily.Serif)
-            Image(imageVector = Icons.Default.ShoppingCart, contentDescription = "")
+            Image(
+                imageVector = Icons.Default.ShoppingCart,
+                contentDescription = "",
+                modifier = Modifier.clickable { navController.navigate("Cart") })
         }
 
         LazyRow(
@@ -121,23 +119,14 @@ fun HomeScreen(
         ) {
             items(if (productResponse?.data != null) productResponse!!.data else emptyList()) {
                 ItemProduct(
+                    id = it._id,
                     url = it.product_thumb,
                     name = it.product_name,
-                    price = it.product_price
+                    price = it.product_price,
                 ) {
-//                    navController.navigate("")
+                    navController.navigate("Detail/${it._id}")
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun HomePreview() {
-    ASMTheme {
-        val categoryViewModel = CategoryViewModel()
-        val productViewModel = ProductViewModel()
-        HomeScreen(null, categoryViewModel, productViewModel)
     }
 }

@@ -3,40 +3,27 @@ package com.example.asm
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.asm.api.ViewModel.AuthenticationViewModel
 import com.example.asm.api.ViewModel.CategoryViewModel
 import com.example.asm.api.ViewModel.ProductViewModel
-import com.example.asm.components.ButtonComponent
+import com.example.asm.screen.Cart
+import com.example.asm.screen.Checkout
+import com.example.asm.screen.Details
+import com.example.asm.screen.SuccessS
 import com.example.asm.screen.auth.LoginScreen
 import com.example.asm.screen.auth.OnBoarding
 import com.example.asm.screen.auth.RegisterScreen
@@ -64,12 +51,26 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+data class CartItem(
+    val id: String,
+    val url: Any,
+    val product_name: String,
+    var quantity: Int,
+    val stock: Int,
+    val price: Int,
+)
+
 @Composable
 fun MainApp() {
     val navController = rememberNavController()
     val authenticationViewModel = AuthenticationViewModel()
     val categoryViewModel = CategoryViewModel()
     val productViewModel = ProductViewModel()
+
+    val cart = remember {
+        mutableStateListOf<CartItem>()
+    }
+
     ASMTheme {
         Scaffold {
             NavHost(
@@ -85,11 +86,81 @@ fun MainApp() {
                     LoginScreen(navController, authenticationViewModel = authenticationViewModel)
                 }
                 composable("Register") {
-                    RegisterScreen(navController, authenticationViewModel = AuthenticationViewModel())
+                    RegisterScreen(
+                        navController,
+                        authenticationViewModel = AuthenticationViewModel()
+                    )
                 }
 
                 composable("BottomTab") {
-                    BottomTab(navController, categoryViewModel, productViewModel)
+                    BottomTab(navController, categoryViewModel, productViewModel) {
+
+                    }
+                }
+
+                composable("Detail/{productId}") {
+                    val productId = it.arguments?.getString("productId")
+                    if (productId != null) {
+                        Details(navController, productId, productViewModel, cart) {
+                            var existingItem = cart.find { item -> item.id == it.id }
+                            if (existingItem != null) {
+                                cart.replaceAll { item ->
+                                    run {
+                                        if (item.id == it.id) {
+                                            item.copy(quantity = item.quantity + it.quantity)
+                                        } else {
+                                            item
+                                        }
+                                    }
+                                }
+                            } else
+                                cart.add(it)
+                        }
+                    }
+                }
+
+                composable("Cart") {
+                    Cart(
+                        navController,
+                        carts = cart,
+                        handleDelete = {
+                            cart.remove(it)
+                        },
+                        handleDecrement = { item, quantity ->
+                            run {
+                                cart.replaceAll {
+                                    if (it.id == item.id) {
+                                        it.copy(quantity = quantity)
+                                    } else {
+                                        it
+                                    }
+                                }
+                            }
+                        },
+                        handleIncrement = { item, quantity ->
+                            run {
+                                cart.replaceAll {
+                                    if (it.id == item.id) {
+                                        it.copy(quantity = quantity)
+                                    } else {
+                                        it
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+
+                composable("Checkout/{price}") {
+                    val price = it.arguments?.getString("price")
+                    if (price != null) {
+                        Checkout(price.toInt(), navController)
+                    }
+
+                }
+
+                composable("Success") {
+                    SuccessS(navController)
                 }
             }
         }
@@ -106,7 +177,12 @@ fun GreetingPreview() {
 }
 
 @Composable
-fun BottomTab(_navController: NavController, categoryViewModel: CategoryViewModel, productViewModel: ProductViewModel) {
+fun BottomTab(
+    _navController: NavController,
+    categoryViewModel: CategoryViewModel,
+    productViewModel: ProductViewModel,
+    handleAddToCart: (id: String) -> Unit
+) {
     val navController = rememberNavController()
     Scaffold(
         bottomBar = { BottomNav(navController) }
